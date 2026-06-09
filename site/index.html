@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>财报直达 · Financial Reports Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>📊 财报直达</h1>
+    <p class="subtitle">点一下，直接看公司最新的年报 / 季报，不用再输代码、翻菜单。</p>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="搜索公司名或代码…  Search name or ticker" autocomplete="off" />
+      <div class="tabs" id="tabs">
+        <button data-market="all" class="active">全部</button>
+        <button data-market="us">美股</button>
+        <button data-market="cn">A股</button>
+        <button data-market="hk">港股</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="grid"></main>
+
+  <footer>
+    <p>
+      数据来源：美股 <a href="https://www.sec.gov/edgar" target="_blank" rel="noopener">SEC EDGAR</a> ·
+      A股 <a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯</a> ·
+      港股 <a href="https://www1.hkexnews.hk" target="_blank" rel="noopener">HKEXnews</a>
+    </p>
+    <p class="updated">最近更新：<span id="updated">—</span></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

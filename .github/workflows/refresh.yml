@@ -1,0 +1,53 @@
+name: Refresh reports & deploy
+
+# 每天自动抓取最新财报链接并部署网站。也可在 Actions 页手动触发。
+# Refresh the latest report links daily and deploy the site. Manual run available.
+on:
+  schedule:
+    - cron: "0 6 * * *"      # 每天 06:00 UTC / daily 06:00 UTC
+  workflow_dispatch: {}
+  push:
+    branches: [main, master]
+    paths:
+      - "site/**"
+      - "data/**"
+      - "scripts/**"
+      - ".github/workflows/refresh.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 避免并发部署互相覆盖 / prevent overlapping deploys
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch latest report links
+        env:
+          # SEC 要求请求带可联系邮箱；在仓库 Settings→Variables 里设 CONTACT_EMAIL 更好
+          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL || 'finance-reports@users.noreply.github.com' }}
+        run: python scripts/fetch_reports.py
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,179 @@
+{
+  "generated_at": "2026-06-09 07:11 UTC",
+  "markets": {
+    "us": [
+      {
+        "name": "Apple 苹果",
+        "code": "AAPL",
+        "market": "us",
+        "official_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=AAPL&type=10-K&dateb=&owner=include&count=10",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "Microsoft 微软",
+        "code": "MSFT",
+        "market": "us",
+        "official_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=MSFT&type=10-K&dateb=&owner=include&count=10",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "Alphabet 谷歌",
+        "code": "GOOGL",
+        "market": "us",
+        "official_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=GOOGL&type=10-K&dateb=&owner=include&count=10",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "Amazon 亚马逊",
+        "code": "AMZN",
+        "market": "us",
+        "official_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=AMZN&type=10-K&dateb=&owner=include&count=10",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "NVIDIA 英伟达",
+        "code": "NVDA",
+        "market": "us",
+        "official_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=NVDA&type=10-K&dateb=&owner=include&count=10",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "Meta",
+        "code": "META",
+        "market": "us",
+        "official_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=META&type=10-K&dateb=&owner=include&count=10",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "Tesla 特斯拉",
+        "code": "TSLA",
+        "market": "us",
+        "official_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=TSLA&type=10-K&dateb=&owner=include&count=10",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "Berkshire Hathaway 伯克希尔",
+        "code": "BRK-B",
+        "market": "us",
+        "official_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=BRK-B&type=10-K&dateb=&owner=include&count=10",
+        "annual": null,
+        "quarterly": null
+      }
+    ],
+    "cn": [
+      {
+        "name": "贵州茅台",
+        "code": "600519",
+        "market": "cn",
+        "official_url": "http://www.cninfo.com.cn/new/disclosure/stock?stockCode=600519&orgId=",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "招商银行",
+        "code": "600036",
+        "market": "cn",
+        "official_url": "http://www.cninfo.com.cn/new/disclosure/stock?stockCode=600036&orgId=",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "平安银行",
+        "code": "000001",
+        "market": "cn",
+        "official_url": "http://www.cninfo.com.cn/new/disclosure/stock?stockCode=000001&orgId=",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "五粮液",
+        "code": "000858",
+        "market": "cn",
+        "official_url": "http://www.cninfo.com.cn/new/disclosure/stock?stockCode=000858&orgId=",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "比亚迪",
+        "code": "002594",
+        "market": "cn",
+        "official_url": "http://www.cninfo.com.cn/new/disclosure/stock?stockCode=002594&orgId=",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "宁德时代",
+        "code": "300750",
+        "market": "cn",
+        "official_url": "http://www.cninfo.com.cn/new/disclosure/stock?stockCode=300750&orgId=",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "中国平安",
+        "code": "601318",
+        "market": "cn",
+        "official_url": "http://www.cninfo.com.cn/new/disclosure/stock?stockCode=601318&orgId=",
+        "annual": null,
+        "quarterly": null
+      }
+    ],
+    "hk": [
+      {
+        "name": "腾讯控股 Tencent",
+        "code": "00700",
+        "market": "hk",
+        "official_url": "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=zh&stockId=&searchType=0&t1code=40000&category=0&market=SEHK",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "阿里巴巴 Alibaba",
+        "code": "09988",
+        "market": "hk",
+        "official_url": "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=zh&stockId=&searchType=0&t1code=40000&category=0&market=SEHK",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "美团 Meituan",
+        "code": "03690",
+        "market": "hk",
+        "official_url": "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=zh&stockId=&searchType=0&t1code=40000&category=0&market=SEHK",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "小米集团 Xiaomi",
+        "code": "01810",
+        "market": "hk",
+        "official_url": "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=zh&stockId=&searchType=0&t1code=40000&category=0&market=SEHK",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "京东集团 JD",
+        "code": "09618",
+        "market": "hk",
+        "official_url": "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=zh&stockId=&searchType=0&t1code=40000&category=0&market=SEHK",
+        "annual": null,
+        "quarterly": null
+      },
+      {
+        "name": "比亚迪股份 BYD",
+        "code": "01211",
+        "market": "hk",
+        "official_url": "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=zh&stockId=&searchType=0&t1code=40000&category=0&market=SEHK",
+        "annual": null,
+        "quarterly": null
+      }
+    ]
+  }
+}
