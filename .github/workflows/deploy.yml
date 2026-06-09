@@ -15,20 +15,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 清洗密钥：去掉粘贴时可能混入的空格/换行（否则会报 "invalid header value"）
-      - name: Sanitize Cloudflare secrets
+      # 清洗令牌：去掉粘贴时可能混入的空格/换行（否则会报 "invalid header value"）
+      - name: Sanitize Cloudflare token
         env:
           RAW_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          RAW_ACCT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          echo "CF_API_TOKEN=$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')" >> "$GITHUB_ENV"
-          echo "CF_ACCOUNT_ID=$(printf '%s' "$RAW_ACCT" | tr -d '[:space:]')" >> "$GITHUB_ENV"
+        run: echo "CF_API_TOKEN=$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')" >> "$GITHUB_ENV"
 
       - name: Deploy with Wrangler
         uses: cloudflare/wrangler-action@v3
         with:
+          # 不传 accountId：让令牌自己识别所属账号，避免账号 ID 填错导致认证失败。
           apiToken: ${{ env.CF_API_TOKEN }}
-          accountId: ${{ env.CF_ACCOUNT_ID }}
           # 用 4.x：新的 [assets]（Worker 顺带托管网站）需要较新的 wrangler，
           # 否则 action 默认装 3.90 可能部署失败。
           wranglerVersion: "4.98.0"
