@@ -59,6 +59,26 @@ h1 { margin: 0 0 6px; font-size: 28px; }
 }
 .meta .dot { margin: 0 8px; opacity: .5; }
 
+.portals {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.portals-label { color: var(--muted); }
+.portals a {
+  padding: 5px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color .15s, color .15s;
+}
+.portals a:hover { border-color: var(--accent); color: var(--accent); }
+
 .tabs { display: flex; gap: 6px; }
 .tabs button {
   padding: 8px 14px;
