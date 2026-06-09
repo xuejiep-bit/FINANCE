@@ -52,6 +52,13 @@ h1 { margin: 0 0 6px; font-size: 28px; }
 }
 #search:focus { border-color: var(--accent); }
 
+.meta {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.meta .dot { margin: 0 8px; opacity: .5; }
+
 .tabs { display: flex; gap: 6px; }
 .tabs button {
   padding: 8px 14px;
@@ -86,13 +93,22 @@ main {
 
 .card-head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 14px;
 }
-.card-name { font-size: 17px; font-weight: 600; }
-.card-code { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.card-id { min-width: 0; }
+.card-name {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-code { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+.card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .badge {
   font-size: 11px;

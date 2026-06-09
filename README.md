@@ -1,84 +1,88 @@
 # 📊 财报直达 · Financial Reports Hub
 
-一个把**公司最新财报链接**整理在一起的小网站。点一个链接，直接打开该公司
-**最新的年报 / 季报**（PDF 或官方文件），不用再到处输股票代码、翻菜单。
+一个能搜**全市场每一只股票**的小网站。搜公司名或代码，点一下，直接跳到它在
+官方网站上**已按最新排序的财报列表**（最新的年报 / 季报就在最上面）。再也不用
+到处输代码、翻菜单。
 
-支持三个市场，全部用**官方公开数据源**：
+覆盖三个市场、全部上市公司，数据全部来自**官方公开名单**：
 
-| 市场 | 数据源 | 说明 |
+| 市场 | 公司数（约） | 数据源 |
 | --- | --- | --- |
-| 美股 US | [SEC EDGAR](https://www.sec.gov/edgar) | 10-K（年报）、10-Q（季报），官方文件为 HTML/iXBRL |
-| A股 CN | [巨潮资讯 cninfo](http://www.cninfo.com.cn) | 年度报告、季度报告，PDF |
-| 港股 HK | [HKEXnews 披露易](https://www1.hkexnews.hk) | 年报、中期报告，PDF |
+| 美股 US | ~10,000 | [SEC EDGAR](https://www.sec.gov/edgar) |
+| A股 CN | ~5,000 | [巨潮资讯 cninfo](https://www.cninfo.com.cn) |
+| 港股 HK | ~2,600 | [HKEXnews 披露易](https://www1.hkexnews.hk) |
 
 ---
 
 ## 它是怎么工作的
 
 ```
-data/companies.json     你关注的公司清单（增删公司只改这一个文件）
+官方"全部上市公司"名单（3 个文件，允许整体下载）
+        │  scripts/fetch_reports.py 每天抓一次
+        ▼
+site/data.json   全市场目录：每家公司的 代码 / 名称 (+ A股orgId / 港股stockId)
         │
         ▼
-scripts/fetch_reports.py  抓取每家公司最新财报的"直达链接"
-        │
-        ▼
-site/data.json          生成的数据
-        │
-        ▼
-site/ (静态网站)         浏览器打开，点链接直达
+site/ (静态网站)   搜索优先；点公司 → 浏览器现拼出官方"最新财报列表"链接并跳转
 ```
 
-**关键设计：永不失效的兜底链接。** 每家公司都带一个 `official_url`，永远
-指向它在官方网站上的财报列表（已按最新排序）。脚本再尽力把它升级成"直达
-最新文件"的链接。即使某个接口临时抽风，链接也不会坏——最差也能跳到官方页面。
+为什么是"目录 + 官方页"而不是"每天给每只股票抓 PDF"：三个市场合计约 1.8 万家，
+逐个抓既慢又不礼貌、还容易被限流。官方允许整体下载"全部公司名单"，只要 3 个文件
+就能覆盖全市场；每家的链接指向它官方的财报列表页，永远是最新、且永不失效。
+
+> **想要"点一下直接跳到 PDF"？** 那是下一步（B 方案）：加一个 Cloudflare Worker，
+> 在你点击时**按需**解析出那家公司最新财报的 PDF 直链并直接跳转——按需解析单家，
+> 而不是每天预抓全部。当前仓库已经把全市场目录做好，随时可以在此之上加 Worker。
 
 ---
 
 ## 上线（GitHub Pages，免费）
 
 1. 把本仓库推到 GitHub。
-2. 仓库 **Settings → Pages → Build and deployment → Source** 选 **GitHub Actions**。
-3.（可选但推荐）**Settings → Secrets and variables → Actions → Variables** 新建
-   `CONTACT_EMAIL`，填你的邮箱——SEC 要求请求带可联系邮箱，更稳定。
-4. 到 **Actions** 页手动跑一次 `Refresh reports & deploy`（或等每天 06:00 UTC 自动跑）。
-5. 完成后访问 `https://<你的用户名>.github.io/<仓库名>/`。
+2. **Settings → Pages → Source** 选 **GitHub Actions**。
+3.（推荐）**Settings → Secrets and variables → Actions → Variables** 新建
+   `CONTACT_EMAIL` 填你的邮箱——SEC 要求请求带可联系邮箱，更稳定。
+4. **Actions** 页手动跑一次 `Refresh reports & deploy`（之后每天 06:00 UTC 自动跑）。
+   这一步会下载官方名单、生成全市场目录、部署网站。
+5. 访问 `https://<用户名>.github.io/<仓库名>/`。
 
-之后每天会自动抓取一次最新财报链接并重新部署，你不用管。
+> 注意：抓取必须在有外网的环境跑（GitHub Actions 即可）。在没有外网的环境里脚本
+> 也能跑完，只是市场目录为空，仅保留 `data/companies.json` 里的精选公司。
 
 ---
 
-## 添加 / 删除公司
+## 精选 / 置顶公司
 
-只改 `data/companies.json`：
+`data/companies.json` 里的公司会作为**精选**，在网站打开（搜索框为空）时直接显示，
+方便你一眼看到最关注的那几家。增删只改这一个文件：
 
 ```jsonc
 {
-  "us": [ { "name": "Apple 苹果", "ticker": "AAPL" } ],          // 美股：填 ticker
-  "cn": [ { "name": "贵州茅台", "code": "600519", "exchange": "sse" } ], // A股：6位代码 + sse/szse
-  "hk": [ { "name": "腾讯控股", "code": "00700" } ]              // 港股：5位代码
+  "us": [ { "name": "Apple 苹果", "ticker": "AAPL" } ],
+  "cn": [ { "name": "贵州茅台", "code": "600519", "exchange": "sse" } ],
+  "hk": [ { "name": "腾讯控股", "code": "00700" } ]
 }
 ```
 
-- A股 `exchange`：`6` 开头一般是 `sse`（上交所），`0/3` 开头是 `szse`（深交所）。不填也会自动猜。
-- 改完推上去，Action 会自动重新抓取并部署。
+全市场搜索不依赖这个文件——任意股票都能搜到，无需手动维护。
 
 ---
 
 ## 本地预览
 
 ```bash
-python3 scripts/fetch_reports.py     # 需要外网；生成 site/data.json
+python3 scripts/fetch_reports.py          # 需要外网；生成全市场 site/data.json
 cd site && python3 -m http.server 8000
 # 浏览器打开 http://localhost:8000
 ```
-
-> 注意：在没有外网的环境里脚本也能跑完，只是 `annual`/`quarterly` 为空、
-> 全部走官方兜底链接。
 
 ---
 
 ## 已知限制
 
-- **美股**财报是官方 HTML/iXBRL 文件（SEC 不提供官方 PDF），链接指向官方主文档。
-- **港股** 5位代码 → 港交所内部 stockId 的映射是 best-effort；映射不到时退回官方搜索页（仍可用）。
-- 这里整理的是**链接**，不是财务数据库；不存储、不转载任何报告文件本身。
+- **美股**财报是官方 HTML/iXBRL 文件（SEC 不提供官方 PDF）；链接到官方 10-K（年报）/
+  10-Q（季报）列表。
+- **港股**目录依赖港交所的全量股票列表 JSON 来拿 `stockId`；若某次取不到，相关公司
+  会退回官方搜索页（仍可用）。
+- 这里整理的是**链接 + 目录**，不存储、不转载任何报告文件本身。
+- 当前为 A 方案（点击→官方最新财报页）。B 方案（点击→直接跳 PDF）见上文，可后续追加。

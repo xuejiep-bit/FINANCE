@@ -9,15 +9,20 @@
 <body>
   <header>
     <h1>📊 财报直达</h1>
-    <p class="subtitle">点一下，直接看公司最新的年报 / 季报，不用再输代码、翻菜单。</p>
+    <p class="subtitle">搜任意公司，点一下直达它在官方网站上的最新年报 / 季报。覆盖美股、A股、港股全部上市公司。</p>
     <div class="toolbar">
-      <input id="search" type="search" placeholder="搜索公司名或代码…  Search name or ticker" autocomplete="off" />
+      <input id="search" type="search" placeholder="搜索公司名或代码…  例如 茅台 / 600519 / AAPL / 腾讯 / 00700" autocomplete="off" />
       <div class="tabs" id="tabs">
         <button data-market="all" class="active">全部</button>
         <button data-market="us">美股</button>
         <button data-market="cn">A股</button>
         <button data-market="hk">港股</button>
       </div>
+    </div>
+    <div class="meta">
+      <span id="result-count">—</span>
+      <span class="dot">·</span>
+      <span id="total">加载中…</span>
     </div>
   </header>
 
@@ -26,10 +31,11 @@
   <footer>
     <p>
       数据来源：美股 <a href="https://www.sec.gov/edgar" target="_blank" rel="noopener">SEC EDGAR</a> ·
-      A股 <a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯</a> ·
-      港股 <a href="https://www1.hkexnews.hk" target="_blank" rel="noopener">HKEXnews</a>
+      A股 <a href="https://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯</a> ·
+      港股 <a href="https://www1.hkexnews.hk" target="_blank" rel="noopener">HKEXnews</a>。
+      点击后跳转到官方网站上该公司已按最新排序的财报列表。
     </p>
-    <p class="updated">最近更新：<span id="updated">—</span></p>
+    <p class="updated">目录更新：<span id="updated">—</span></p>
   </footer>
 
   <script src="app.js"></script>

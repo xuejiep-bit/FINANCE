@@ -1,73 +1,99 @@
-// 财报直达 — 前端渲染。读取 data.json（由 scripts/fetch_reports.py 生成）。
+// 财报直达 — 前端。读取 data.json（全市场目录），搜索优先，链接在浏览器里现拼。
 const MARKET_LABEL = { us: "美股", cn: "A股", hk: "港股" };
+const MAX_RESULTS = 80;
 
-let ALL = [];          // 扁平化后的全部公司
-let market = "all";    // 当前筛选
+let ALL = [];        // [{m, c, n, x}]  x = orgId(cn) / stockId(hk)
+let INDEX = {};      // "m:code" -> entry，供 featured 解析完整链接
+let FEATURED = [];   // [{m, c, n, x}]
+let market = "all";
 let keyword = "";
 
 const grid = document.getElementById("grid");
+const countEl = document.getElementById("result-count");
 
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
     { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
   ));
 }
+const enc = encodeURIComponent;
 
-// 一份财报的一行：优先给直达链接(doc_url)，没有就退回官方页面。
-function reportRow(label, rpt, fallback) {
-  if (rpt_has(rpt)) {
-    const url = rpt.doc_url || rpt.index_url || fallback;
-    const title = rpt.title || "查看";
-    const date = rpt.date ? `<span class="date">${esc(rpt.date)}</span>` : "";
-    return `
-      <div class="report-row">
-        <span class="label">${label}</span>
-        <div class="info">
-          <div class="title" title="${esc(title)}">${esc(title)}</div>
-          ${date}
-        </div>
-        <a class="btn" href="${esc(url)}" target="_blank" rel="noopener">打开</a>
-      </div>`;
-  }
-  // 没抓到具体文件 → 用官方列表兜底
-  return `
-    <div class="report-row">
-      <span class="label">${label}</span>
-      <div class="info"><div class="date">暂无直达，去官方列表查看</div></div>
-      <a class="btn ghost" href="${esc(fallback)}" target="_blank" rel="noopener">官方页</a>
-    </div>`;
+// 拼出该公司在官方网站上"已过滤+按最新排序"的财报列表页。
+function officialUrl(m, code, x) {
+  if (m === "us")
+    return `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${enc(code)}&type=10-K&dateb=&owner=include&count=40`;
+  if (m === "cn")
+    return x
+      ? `https://www.cninfo.com.cn/new/disclosure/stock?stockCode=${enc(code)}&orgId=${enc(x)}`
+      : `https://www.cninfo.com.cn/new/fulltextSearch?keyWord=${enc(code)}`;
+  if (m === "hk")
+    return x
+      ? `https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=zh&category=0&market=SEHK&searchType=1&t1code=40000&stockId=${enc(x)}`
+      : `https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=zh&category=0&market=SEHK&searchType=0&t1code=40000`;
+}
+// 美股季报 10-Q 单独一个链接
+function usQuarterlyUrl(code) {
+  return `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${enc(code)}&type=10-Q&dateb=&owner=include&count=40`;
 }
 
-function rpt_has(r) { return r && (r.doc_url || r.index_url); }
-
-function card(c) {
+function card(e) {
+  const url = officialUrl(e.m, e.c, e.x);
+  const extra = e.m === "us"
+    ? `<a class="btn ghost" href="${esc(usQuarterlyUrl(e.c))}" target="_blank" rel="noopener">季报 10-Q</a>`
+    : "";
+  const primaryLabel = e.m === "us" ? "年报 10-K" : "最新财报";
   return `
     <div class="card">
       <div class="card-head">
-        <div>
-          <div class="card-name">${esc(c.name)}</div>
-          <div class="card-code">${esc(c.code)}</div>
+        <div class="card-id">
+          <div class="card-name" title="${esc(e.n)}">${esc(e.n || e.c)}</div>
+          <div class="card-code">${esc(e.c)}</div>
         </div>
-        <span class="badge ${c.market}">${MARKET_LABEL[c.market] || c.market}</span>
+        <span class="badge ${e.m}">${MARKET_LABEL[e.m]}</span>
       </div>
-      ${reportRow("年报", c.annual, c.official_url)}
-      ${reportRow("季报", c.quarterly, c.official_url)}
-      <div class="card-foot">
-        <a href="${esc(c.official_url)}" target="_blank" rel="noopener">↗ 该公司全部官方披露</a>
+      <div class="card-actions">
+        <a class="btn" href="${esc(url)}" target="_blank" rel="noopener">📄 ${primaryLabel}</a>
+        ${extra}
       </div>
     </div>`;
 }
 
 function render() {
   const kw = keyword.trim().toLowerCase();
-  const list = ALL.filter((c) => {
-    if (market !== "all" && c.market !== market) return false;
-    if (!kw) return true;
-    return (c.name + " " + c.code).toLowerCase().includes(kw);
-  });
-  grid.innerHTML = list.length
-    ? list.map(card).join("")
-    : `<div class="empty">没有匹配的公司。试试别的关键词，或在 data/companies.json 里添加。</div>`;
+
+  // 空搜索 → 显示精选；有搜索 → 在全市场过滤
+  let pool = kw ? ALL : FEATURED;
+  if (market !== "all") pool = pool.filter((e) => e.m === market);
+
+  let list = pool;
+  if (kw) {
+    list = [];
+    for (const e of pool) {
+      if (e.c.toLowerCase().includes(kw) || (e.n && e.n.toLowerCase().includes(kw))) {
+        list.push(e);
+        if (list.length >= MAX_RESULTS + 1) break;
+      }
+    }
+  }
+
+  const more = list.length > MAX_RESULTS;
+  const shown = more ? list.slice(0, MAX_RESULTS) : list;
+
+  if (!shown.length) {
+    grid.innerHTML = `<div class="empty">${kw ? "没有匹配的公司，换个关键词试试。" : "暂无精选公司。直接在上面搜索全部股票。"}</div>`;
+  } else {
+    grid.innerHTML = shown.map(card).join("");
+  }
+
+  if (!kw) {
+    countEl.textContent = FEATURED.length
+      ? `精选 ${pool.length} 家 · 直接搜索可覆盖全部股票`
+      : "在上方搜索全部股票";
+  } else {
+    countEl.textContent = more
+      ? `匹配较多，仅显示前 ${MAX_RESULTS} 条，请输入更具体的关键词`
+      : `找到 ${shown.length} 家`;
+  }
 }
 
 document.getElementById("search").addEventListener("input", (e) => {
@@ -83,11 +109,33 @@ document.getElementById("tabs").addEventListener("click", (e) => {
   render();
 });
 
+function resolveFeatured(f) {
+  // f = [market, code, name]；尽量从目录里补上 orgId/stockId
+  const [m, c, n] = f;
+  const hit = INDEX[`${m}:${c}`];
+  return { m, c, n: n || (hit && hit.n) || c, x: hit && hit.x };
+}
+
 fetch("data.json", { cache: "no-store" })
   .then((r) => r.json())
   .then((data) => {
-    const m = data.markets || {};
-    ALL = [...(m.us || []), ...(m.cn || []), ...(m.hk || [])];
+    const push = (arr, m) => {
+      for (const row of arr || []) {
+        const e = { m, c: row[0], n: row[1], x: row[2] };
+        ALL.push(e);
+        INDEX[`${m}:${e.c}`] = e;
+      }
+    };
+    push(data.us, "us");
+    push(data.cn, "cn");
+    push(data.hk, "hk");
+    FEATURED = (data.featured || []).map(resolveFeatured);
+
+    const cnt = data.counts || { us: 0, cn: 0, hk: 0 };
+    const total = (cnt.us || 0) + (cnt.cn || 0) + (cnt.hk || 0);
+    document.getElementById("total").textContent = total
+      ? `美股 ${cnt.us} · A股 ${cnt.cn} · 港股 ${cnt.hk}（共 ${total.toLocaleString()} 家）`
+      : "目录尚未生成（运行抓取后填充）";
     document.getElementById("updated").textContent = data.generated_at || "—";
     render();
   })
