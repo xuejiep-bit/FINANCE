@@ -30,24 +30,40 @@ site/ (静态网站)   搜索优先；点公司 → 浏览器现拼出官方"最
 逐个抓既慢又不礼貌、还容易被限流。官方允许整体下载"全部公司名单"，只要 3 个文件
 就能覆盖全市场；每家的链接指向它官方的财报列表页，永远是最新、且永不失效。
 
-> **想要"点一下直接跳到 PDF"？** 那是下一步（B 方案）：加一个 Cloudflare Worker，
-> 在你点击时**按需**解析出那家公司最新财报的 PDF 直链并直接跳转——按需解析单家，
-> 而不是每天预抓全部。当前仓库已经把全市场目录做好，随时可以在此之上加 Worker。
+> **点一下直接跳到 PDF** 由 Cloudflare Worker（`worker/index.js`）实现：点击时
+> **按需**解析出那家公司最新财报的 PDF 直链并直接跳转（按需解析单家，而不是每天
+> 预抓全部）。同一个 Worker 还托管网站本身，见下方部署。
 
 ---
 
-## 上线（GitHub Pages，免费）
+## 部署到 Cloudflare（网站 + 接口，一起部署）
 
-1. 把本仓库推到 GitHub。
-2. **Settings → Pages → Source** 选 **GitHub Actions**。
-3.（推荐）**Settings → Secrets and variables → Actions → Variables** 新建
-   `CONTACT_EMAIL` 填你的邮箱——SEC 要求请求带可联系邮箱，更稳定。
-4. **Actions** 页手动跑一次 `Refresh reports & deploy`（之后每天 06:00 UTC 自动跑）。
-   这一步会下载官方名单、生成全市场目录、部署网站。
-5. 访问 `https://<用户名>.github.io/<仓库名>/`。
+整个东西就是**一个 Cloudflare Worker**：它既托管网站（`site/`），又提供接口
+（`/api/directory` 全市场目录、`/r/<市场>/<代码>` 直达最新财报 PDF）。所以只要
+部署这一个 Worker，网站和功能就全有了，**不用再分两处、不用手填地址**。
 
-> 注意：抓取必须在有外网的环境跑（GitHub Actions 即可）。在没有外网的环境里脚本
-> 也能跑完，只是市场目录为空，仅保留 `data/companies.json` 里的精选公司。
+### 方式一：一条命令（手动）
+
+```bash
+npx wrangler login     # 浏览器登录你的 Cloudflare 账号
+npx wrangler deploy    # 部署，输出形如 https://finance.<你的子域>.workers.dev
+```
+
+打开输出的地址就是完整网站。**注意：`git push` 只进 GitHub，不会自动更新
+Cloudflare**——每次想让线上生效，都要再跑一次 `wrangler deploy`（或用方式二自动化）。
+
+### 方式二：push 自动部署（一次性配置，之后全自动）
+
+仓库里已带 `.github/workflows/deploy.yml`。配置一次令牌，以后每次 push 自动部署：
+
+1. Cloudflare 控制台 → **My Profile → API Tokens → Create Token**，用
+   **“Edit Cloudflare Workers”** 模板创建一个令牌，复制。
+2. GitHub 仓库 → **Settings → Secrets and variables → Actions → New repository secret**，
+   新建 `CLOUDFLARE_API_TOKEN` = 刚才的令牌。（账号下有多个时再加 `CLOUDFLARE_ACCOUNT_ID`。）
+3. 完成。之后每次有人 push，GitHub 就自动 `wrangler deploy` 到 Cloudflare。
+
+> 想换部署名字/域名，改 `wrangler.toml` 里的 `name`。当前为 `finance`，对应
+> `https://finance.<你的子域>.workers.dev`。
 
 ---
 
@@ -78,35 +94,16 @@ cd site && python3 -m http.server 8000
 
 ---
 
-## 点一下直达 PDF（Cloudflare Worker）
+## 部署后自检
 
-静态站点本身只能链到官方页面，而且 A股/港股需要 `orgId`/`stockId` 才能精确定位，
-全市场目录也得在有外网的地方抓。这些都交给一个 Cloudflare Worker（`worker/index.js`）：
+浏览器打开（把 `finance.你的子域` 换成你的实际地址）：
 
-- `GET /api/directory` — 全市场目录（美股/A股/港股），抓官方名单并缓存。网站用它搜索**全部股票**。
-- `GET /r/<us|cn|hk>/<code>` — 按需解析该公司**最新财报直链并 302 跳转**（解析失败退回官方页）。
+- `https://finance.你的子域.workers.dev/` — 网站本体，能搜全部股票。
+- `https://finance.你的子域.workers.dev/api/directory` — 应返回一大坨公司目录 JSON。
+- `https://finance.你的子域.workers.dev/r/cn/600519` — 应直接跳到贵州茅台最新年报 PDF。
+- `https://finance.你的子域.workers.dev/r/hk/00700` — 应直接跳到腾讯最新财报 PDF。
 
-### 部署
-
-```bash
-npm i -g wrangler          # 或用 npx
-wrangler login             # 浏览器登录你的 Cloudflare 账号
-wrangler deploy            # 部署，输出形如 https://caibao-resolver.<子域>.workers.dev
-```
-
-### 接上网站
-
-把上一步输出的地址填进 `site/config.js`：
-
-```js
-window.WORKER_BASE = "https://caibao-resolver.你的子域.workers.dev";
-```
-
-重新部署网站即可。之后：搜索覆盖全部股票、点"最新财报"直接打开 PDF、A股/港股不用再输代码。
-`WORKER_BASE` 留空时网站退回纯静态模式（仅精选 + 官方页链接），不会报错。
-
-> 自检：浏览器打开 `https://<你的worker地址>/r/cn/600519` 应直接跳到贵州茅台最新年报 PDF；
-> `https://<你的worker地址>/api/directory` 应返回三个市场的公司目录。
+`/r/<us|cn|hk>/<代码>` 按需解析最新财报直链并 302 跳转；解析失败时退回官方页面，链接永不死。
 
 ## 已知限制
 

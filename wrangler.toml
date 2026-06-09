@@ -1,4 +1,11 @@
-name = "caibao-resolver"
+# 一个 Worker 同时托管：静态网站(site/) + 接口(/api/directory, /r/...)。
+# 部署后整个站点就在 https://finance.<你的子域>.workers.dev/
+name = "finance"
 main = "worker/index.js"
 compatibility_date = "2025-06-01"
 workers_dev = true
+
+# 把 site/ 目录作为静态资源托管。/、/app.js 等由资源直接返回；
+# /api/* 和 /r/* 交给 worker/index.js 处理（同源，无需 CORS、无需手填地址）。
+[assets]
+directory = "./site"

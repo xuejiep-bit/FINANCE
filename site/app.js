@@ -8,8 +8,10 @@ let FEATURED = [];   // [{m, c, n, x}]
 let market = "all";
 let keyword = "";
 
-// Worker 地址（site/config.js 里设置）。设置后：目录走 Worker、点击直达 PDF。
+// API 地址。site/config.js 里 WORKER_BASE 留空 = 同源（网站就由 Worker 托管）。
+// 若网站和 Worker 不同源，则在 config.js 填 Worker 地址。
 const WB = (window.WORKER_BASE || "").replace(/\/+$/, "");
+let hasWorker = false; // 运行时探测：成功拿到 /api/directory 就说明 Worker 在线
 
 const grid = document.getElementById("grid");
 const countEl = document.getElementById("result-count");
@@ -39,12 +41,12 @@ function usQuarterlyUrl(code) {
   return `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${enc(code)}&type=10-Q&dateb=&owner=include&count=40`;
 }
 
-// 主链接：有 Worker 就走 Worker（直达 PDF），否则用官方页面。
+// 主链接：Worker 在线就走 Worker（直达 PDF），否则用官方页面。
 function annualLink(e) {
-  return WB ? `${WB}/r/${e.m}/${enc(e.c)}` : officialUrl(e.m, e.c, e.x);
+  return hasWorker ? `${WB}/r/${e.m}/${enc(e.c)}` : officialUrl(e.m, e.c, e.x);
 }
 function quarterlyLink(e) {
-  return WB ? `${WB}/r/${e.m}/${enc(e.c)}?type=quarterly` : usQuarterlyUrl(e.c);
+  return hasWorker ? `${WB}/r/${e.m}/${enc(e.c)}?type=quarterly` : usQuarterlyUrl(e.c);
 }
 
 function card(e) {
@@ -147,7 +149,7 @@ function loadDirectory(data) {
   const total = (cnt.us || 0) + (cnt.cn || 0) + (cnt.hk || 0);
   document.getElementById("total").textContent = total
     ? `美股 ${cnt.us} · A股 ${cnt.cn} · 港股 ${cnt.hk}（共 ${total.toLocaleString()} 家）`
-    : (WB ? "目录加载失败，请检查 Worker" : "目录尚未生成（部署 Worker 或运行抓取后填充）");
+    : "仅精选可用 · 部署 Worker 后覆盖全部股票并直达 PDF";
   document.getElementById("updated").textContent = data.generated_at || "—";
 }
 
@@ -158,16 +160,15 @@ async function init() {
     local = await (await fetch("data.json", { cache: "no-store" })).json();
   } catch (e) { /* 没有本地数据也能靠 Worker */ }
 
-  // 有 Worker → 用 Worker 的全市场目录；否则用本地目录
+  // 探测 Worker：拿到 /api/directory 就用全市场目录、并让链接走直达解析
   let dir = local;
-  if (WB) {
-    try {
-      dir = await (await fetch(`${WB}/api/directory`, { cache: "no-store" })).json();
-    } catch (e) {
-      document.getElementById("total").textContent = `无法连接 Worker：${esc(e.message)}`;
-      dir = local;
+  try {
+    const res = await fetch(`${WB}/api/directory`, { cache: "no-store" });
+    if (res.ok) {
+      dir = await res.json();
+      hasWorker = true;
     }
-  }
+  } catch (e) { /* 没有 Worker，退回本地精选 + 官方页链接 */ }
 
   loadDirectory(dir);
   FEATURED = (local.featured || []).map(resolveFeatured);

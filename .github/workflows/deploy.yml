@@ -1,0 +1,22 @@
+name: Deploy to Cloudflare
+
+# 每次 push（或手动触发）就用 wrangler 把 Worker + 网站一起部署到 Cloudflare。
+# 需要在 GitHub 仓库 Settings → Secrets and variables → Actions 里设置：
+#   CLOUDFLARE_API_TOKEN   （必填）创建方式见 README
+#   CLOUDFLARE_ACCOUNT_ID  （账号下有多个时填，单账号可不填）
+on:
+  push:
+    branches: [main, master, claude/laughing-cerf-fbio96]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy with Wrangler
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
