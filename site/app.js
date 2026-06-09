@@ -8,6 +8,9 @@ let FEATURED = [];   // [{m, c, n, x}]
 let market = "all";
 let keyword = "";
 
+// Worker 地址（site/config.js 里设置）。设置后：目录走 Worker、点击直达 PDF。
+const WB = (window.WORKER_BASE || "").replace(/\/+$/, "");
+
 const grid = document.getElementById("grid");
 const countEl = document.getElementById("result-count");
 
@@ -36,12 +39,21 @@ function usQuarterlyUrl(code) {
   return `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${enc(code)}&type=10-Q&dateb=&owner=include&count=40`;
 }
 
+// 主链接：有 Worker 就走 Worker（直达 PDF），否则用官方页面。
+function annualLink(e) {
+  return WB ? `${WB}/r/${e.m}/${enc(e.c)}` : officialUrl(e.m, e.c, e.x);
+}
+function quarterlyLink(e) {
+  return WB ? `${WB}/r/${e.m}/${enc(e.c)}?type=quarterly` : usQuarterlyUrl(e.c);
+}
+
 function card(e) {
-  const url = officialUrl(e.m, e.c, e.x);
   const extra = e.m === "us"
-    ? `<a class="btn ghost" href="${esc(usQuarterlyUrl(e.c))}" target="_blank" rel="noopener">季报 10-Q</a>`
+    ? `<a class="btn ghost" href="${esc(quarterlyLink(e))}" target="_blank" rel="noopener">季报 10-Q</a>`
     : "";
   const primaryLabel = e.m === "us" ? "年报 10-K" : "最新财报";
+  // 始终保留一个"官方页"安全入口（即使直达解析偶尔失败也能用）
+  const safety = `<a class="btn ghost" href="${esc(officialUrl(e.m, e.c, e.x))}" target="_blank" rel="noopener">官方页</a>`;
   return `
     <div class="card">
       <div class="card-head">
@@ -52,8 +64,9 @@ function card(e) {
         <span class="badge ${e.m}">${MARKET_LABEL[e.m]}</span>
       </div>
       <div class="card-actions">
-        <a class="btn" href="${esc(url)}" target="_blank" rel="noopener">📄 ${primaryLabel}</a>
+        <a class="btn" href="${esc(annualLink(e))}" target="_blank" rel="noopener">📄 ${primaryLabel}</a>
         ${extra}
+        ${safety}
       </div>
     </div>`;
 }
@@ -116,29 +129,49 @@ function resolveFeatured(f) {
   return { m, c, n: n || (hit && hit.n) || c, x: hit && hit.x };
 }
 
-fetch("data.json", { cache: "no-store" })
-  .then((r) => r.json())
-  .then((data) => {
-    const push = (arr, m) => {
-      for (const row of arr || []) {
-        const e = { m, c: row[0], n: row[1], x: row[2] };
-        ALL.push(e);
-        INDEX[`${m}:${e.c}`] = e;
-      }
-    };
-    push(data.us, "us");
-    push(data.cn, "cn");
-    push(data.hk, "hk");
-    FEATURED = (data.featured || []).map(resolveFeatured);
+function loadDirectory(data) {
+  ALL = [];
+  INDEX = {};
+  const push = (arr, m) => {
+    for (const row of arr || []) {
+      const e = { m, c: row[0], n: row[1], x: row[2] };
+      ALL.push(e);
+      INDEX[`${m}:${e.c}`] = e;
+    }
+  };
+  push(data.us, "us");
+  push(data.cn, "cn");
+  push(data.hk, "hk");
 
-    const cnt = data.counts || { us: 0, cn: 0, hk: 0 };
-    const total = (cnt.us || 0) + (cnt.cn || 0) + (cnt.hk || 0);
-    document.getElementById("total").textContent = total
-      ? `美股 ${cnt.us} · A股 ${cnt.cn} · 港股 ${cnt.hk}（共 ${total.toLocaleString()} 家）`
-      : "目录尚未生成（运行抓取后填充）";
-    document.getElementById("updated").textContent = data.generated_at || "—";
-    render();
-  })
-  .catch((err) => {
-    grid.innerHTML = `<div class="empty">无法加载 data.json：${esc(err.message)}</div>`;
-  });
+  const cnt = data.counts || { us: 0, cn: 0, hk: 0 };
+  const total = (cnt.us || 0) + (cnt.cn || 0) + (cnt.hk || 0);
+  document.getElementById("total").textContent = total
+    ? `美股 ${cnt.us} · A股 ${cnt.cn} · 港股 ${cnt.hk}（共 ${total.toLocaleString()} 家）`
+    : (WB ? "目录加载失败，请检查 Worker" : "目录尚未生成（部署 Worker 或运行抓取后填充）");
+  document.getElementById("updated").textContent = data.generated_at || "—";
+}
+
+async function init() {
+  // 精选始终来自本地 data.json（用于空搜索时置顶显示）
+  let local = { featured: [], us: [], cn: [], hk: [], counts: {}, generated_at: "" };
+  try {
+    local = await (await fetch("data.json", { cache: "no-store" })).json();
+  } catch (e) { /* 没有本地数据也能靠 Worker */ }
+
+  // 有 Worker → 用 Worker 的全市场目录；否则用本地目录
+  let dir = local;
+  if (WB) {
+    try {
+      dir = await (await fetch(`${WB}/api/directory`, { cache: "no-store" })).json();
+    } catch (e) {
+      document.getElementById("total").textContent = `无法连接 Worker：${esc(e.message)}`;
+      dir = local;
+    }
+  }
+
+  loadDirectory(dir);
+  FEATURED = (local.featured || []).map(resolveFeatured);
+  render();
+}
+
+init();

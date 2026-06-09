@@ -78,6 +78,36 @@ cd site && python3 -m http.server 8000
 
 ---
 
+## 点一下直达 PDF（Cloudflare Worker）
+
+静态站点本身只能链到官方页面，而且 A股/港股需要 `orgId`/`stockId` 才能精确定位，
+全市场目录也得在有外网的地方抓。这些都交给一个 Cloudflare Worker（`worker/index.js`）：
+
+- `GET /api/directory` — 全市场目录（美股/A股/港股），抓官方名单并缓存。网站用它搜索**全部股票**。
+- `GET /r/<us|cn|hk>/<code>` — 按需解析该公司**最新财报直链并 302 跳转**（解析失败退回官方页）。
+
+### 部署
+
+```bash
+npm i -g wrangler          # 或用 npx
+wrangler login             # 浏览器登录你的 Cloudflare 账号
+wrangler deploy            # 部署，输出形如 https://caibao-resolver.<子域>.workers.dev
+```
+
+### 接上网站
+
+把上一步输出的地址填进 `site/config.js`：
+
+```js
+window.WORKER_BASE = "https://caibao-resolver.你的子域.workers.dev";
+```
+
+重新部署网站即可。之后：搜索覆盖全部股票、点"最新财报"直接打开 PDF、A股/港股不用再输代码。
+`WORKER_BASE` 留空时网站退回纯静态模式（仅精选 + 官方页链接），不会报错。
+
+> 自检：浏览器打开 `https://<你的worker地址>/r/cn/600519` 应直接跳到贵州茅台最新年报 PDF；
+> `https://<你的worker地址>/api/directory` 应返回三个市场的公司目录。
+
 ## 已知限制
 
 - **美股**财报是官方 HTML/iXBRL 文件（SEC 不提供官方 PDF）；链接到官方 10-K（年报）/
