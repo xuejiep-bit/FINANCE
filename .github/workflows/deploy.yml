@@ -20,3 +20,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # 用 4.x：新的 [assets]（Worker 顺带托管网站）需要较新的 wrangler，
+          # 否则 action 默认装 3.90 可能部署失败。
+          wranglerVersion: "4.98.0"
